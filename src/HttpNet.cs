@@ -8,29 +8,54 @@ namespace src
 {
     public class HttpNet
     {
-        private string FilePath = String.Empty;
+        private string directory = String.Empty;
+        private string inputPath = String.Empty;
+        private string outputPath = String.Empty;
+        private readonly int chunkSize;
 
         public HttpNet()
         {
-            FilePath = new DirectoryInfo(Directory.GetCurrentDirectory()).Parent.Parent.Parent.Parent.ToString();
-            FilePath = Path.Combine(FilePath, "src", "messages.txt");
+            directory = new DirectoryInfo(Directory.GetCurrentDirectory()).Parent.Parent.Parent.Parent.ToString();
+            inputPath = Path.Combine(directory, "src", "message.txt");
+            outputPath = Path.Combine(directory, "src", "output.txt");
+            chunkSize = 8;
         }
         public void Read()
         {
-            if (!File.Exists(FilePath))
-            {
-                Console.WriteLine("File doesn't exist");
-                return;
-            }
+            var encoding = Encoding.UTF8;
 
-            using (StreamReader sr = new StreamReader(FilePath))
+            using (var inputStream = new FileStream(inputPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (var outputWriter = new StreamWriter(outputPath, false, encoding))
             {
-                int charCode;
-                while ((charCode = sr.Read()) != -1)
+                StringBuilder lineBuilder = new StringBuilder();
+                byte[] buffer = new byte[chunkSize];
+                int bytesRead;
+
+                while ((bytesRead = inputStream.Read(buffer, 0, chunkSize)) > 0)
                 {
-                    Console.WriteLine((char)charCode);
-                }
+                    string chunk = encoding.GetString(buffer, 0, bytesRead);
+                    foreach (char c in chunk)
+                    {
+                        lineBuilder.Append(c);
+                        if (c == '\n' || c == '\r')
+                        {
+                            outputWriter.Write($"read: {lineBuilder.ToString()}");
+                            Console.Write($"read: {lineBuilder.ToString()}");
 
+                            outputWriter.Flush();
+                            lineBuilder.Clear();
+                        }
+                    }
+                }
+                
+                if (lineBuilder.Length > 0)
+                {
+                    outputWriter.WriteLine($"read: {lineBuilder.ToString()}");
+                    Console.WriteLine($"read: {lineBuilder.ToString()}");
+
+                    outputWriter.Flush();
+                    lineBuilder.Clear();
+                }
             }
         }
     }
