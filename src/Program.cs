@@ -5,7 +5,14 @@
         static void Main(string[] args)
         {
             HttpNet net = new HttpNet();
-            net.Read();
+            try
+            {
+                net.Read();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
     }
 }
