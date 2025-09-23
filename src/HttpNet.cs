@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace src
@@ -16,46 +17,60 @@ namespace src
         public HttpNet()
         {
             directory = new DirectoryInfo(Directory.GetCurrentDirectory()).Parent.Parent.Parent.Parent.ToString();
-            inputPath = Path.Combine(directory, "src", "message.txt");
+            inputPath = Path.Combine(directory, "src", "messages.txt");
             outputPath = Path.Combine(directory, "src", "output.txt");
             chunkSize = 8;
         }
-        public void Read()
+        public async Task Read()
         {
             var encoding = Encoding.UTF8;
+            var channel = Channel.CreateUnbounded<string>();
 
             using (var inputStream = new FileStream(inputPath, FileMode.Open, FileAccess.Read, FileShare.Read))
             using (var outputWriter = new StreamWriter(outputPath, false, encoding))
             {
-                StringBuilder lineBuilder = new StringBuilder();
-                byte[] buffer = new byte[chunkSize];
-                int bytesRead;
-
-                while ((bytesRead = inputStream.Read(buffer, 0, chunkSize)) > 0)
+                _ = Task.Run(() =>
                 {
-                    string chunk = encoding.GetString(buffer, 0, bytesRead);
-                    foreach (char c in chunk)
-                    {
-                        lineBuilder.Append(c);
-                        if (c == '\n' || c == '\r')
-                        {
-                            outputWriter.Write($"read: {lineBuilder.ToString()}");
-                            Console.Write($"read: {lineBuilder.ToString()}");
+                    GetLineChannel(inputStream, channel.Writer);
+                    channel.Writer.Complete();
+                });
 
-                            outputWriter.Flush();
-                            lineBuilder.Clear();
-                        }
+                while (await channel.Reader.WaitToReadAsync())
+                {
+                    string line = await channel.Reader.ReadAsync();
+                    outputWriter.Write(line);
+                    Console.Write(line);
+                }
+                await outputWriter.FlushAsync();
+            }
+        }
+
+        public void GetLineChannel(Stream inputStream, ChannelWriter<string> writer)
+        {
+            var encoding = Encoding.UTF8;
+
+            StringBuilder lineBuilder = new StringBuilder();
+            byte[] buffer = new byte[chunkSize];
+            int bytesRead;
+
+            while ((bytesRead = inputStream.Read(buffer, 0, chunkSize)) > 0)
+            {
+                string chunk = encoding.GetString(buffer, 0, bytesRead);
+                foreach (char ch in chunk)
+                {
+                    lineBuilder.Append(ch);
+                    if (ch == '\n')
+                    {
+                        writer.TryWrite($"read: {lineBuilder.ToString()}");
+                        lineBuilder.Clear();
                     }
                 }
-                
-                if (lineBuilder.Length > 0)
-                {
-                    outputWriter.WriteLine($"read: {lineBuilder.ToString()}");
-                    Console.WriteLine($"read: {lineBuilder.ToString()}");
+            }
 
-                    outputWriter.Flush();
-                    lineBuilder.Clear();
-                }
+            if (lineBuilder.Length > 0)
+            {
+                writer.TryWrite($"read: {lineBuilder.ToString()}\n");
+                lineBuilder.Clear();
             }
         }
     }

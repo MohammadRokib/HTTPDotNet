@@ -2,12 +2,12 @@
 {
     internal class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             HttpNet net = new HttpNet();
             try
             {
-                net.Read();
+                await net.Read();
             }
             catch (Exception ex)
             {
