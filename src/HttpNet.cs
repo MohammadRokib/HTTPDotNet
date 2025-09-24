@@ -16,7 +16,7 @@ namespace src
 
         public HttpNet()
         {
-            directory = new DirectoryInfo(Directory.GetCurrentDirectory()).Parent.Parent.Parent.Parent.ToString();
+            directory = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.Parent.Parent.ToString();
             inputPath = Path.Combine(directory, "src", "messages.txt");
             outputPath = Path.Combine(directory, "src", "output.txt");
             chunkSize = 8;
@@ -39,6 +39,29 @@ namespace src
                 {
                     string line = await channel.Reader.ReadAsync();
                     outputWriter.Write(line);
+                    Console.Write(line);
+                }
+                await outputWriter.FlushAsync();
+            }
+        }
+
+        public async Task Read(Stream inputStream)
+        {
+            var encoding = Encoding.UTF8;
+            var channel = Channel.CreateUnbounded<string>();
+
+            using (var outputWriter = new StreamWriter(outputPath, false, encoding))
+            {
+                _ = Task.Run(() =>
+                {
+                    GetLineChannel(inputStream, channel.Writer);
+                    channel.Writer.Complete();
+                });
+
+                while (await channel.Reader.WaitToReadAsync())
+                {
+                    string line = await channel.Reader.ReadAsync();
+                    await outputWriter.WriteAsync(line);
                     Console.Write(line);
                 }
                 await outputWriter.FlushAsync();
