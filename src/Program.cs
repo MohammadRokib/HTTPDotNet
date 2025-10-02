@@ -1,5 +1,4 @@
-﻿using HttpNet;
-using StreamParser;
+﻿using StreamParser;
 using System.Net;
 using System.Net.Sockets;
 
