@@ -10,9 +10,14 @@ namespace src
         private static readonly int port = 9000;
         static async Task Main(string[] args)
         {
+            await TcpRunner();
+        }
+
+        static async Task TcpRunner()
+        {
             Tcp tcp = new Tcp();
             var listener = new TcpListener(IPAddress.Loopback, port);
-            
+
             listener.Start();
             Console.WriteLine($"Listening on port: {port}");
 
