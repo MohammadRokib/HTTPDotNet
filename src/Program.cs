@@ -1,4 +1,5 @@
 ﻿using HttpNet;
+using StreamParser;
 using System.Net;
 using System.Net.Sockets;
 
@@ -15,7 +16,7 @@ namespace src
 
         static async Task TcpRunner()
         {
-            Tcp tcp = new Tcp();
+            Parser ps = new Parser();
             var listener = new TcpListener(IPAddress.Loopback, port);
 
             listener.Start();
@@ -38,7 +39,7 @@ namespace src
                         try
                         {
                             await using var stream = client.GetStream();
-                            await tcp.Read(stream);
+                            await ps.Read(stream);
                         }
                         catch (Exception ex)
                         {
