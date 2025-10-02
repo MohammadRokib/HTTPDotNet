@@ -363,5 +363,4 @@ MigrationBackup/
 FodyWeavers.xsd
 
 # Static Files
-messages.txt
-output.txt
+*.txt

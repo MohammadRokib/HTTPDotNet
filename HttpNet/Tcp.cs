@@ -5,22 +5,23 @@ using System.Text;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
-namespace src
+namespace HttpNet
 {
-    public class HttpNet
+    public class Tcp
     {
         private string directory = String.Empty;
         private string inputPath = String.Empty;
         private string outputPath = String.Empty;
         private readonly int chunkSize;
 
-        public HttpNet()
+        public Tcp()
         {
             directory = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.Parent.Parent.ToString();
             inputPath = Path.Combine(directory, "src", "messages.txt");
             outputPath = Path.Combine(directory, "src", "output.txt");
             chunkSize = 8;
         }
+
         public async Task Read()
         {
             var encoding = Encoding.UTF8;
@@ -82,7 +83,7 @@ namespace src
                 foreach (char ch in chunk)
                 {
                     lineBuilder.Append(ch);
-                    if (ch == '\n')
+                    if (ch == '\n' || ch == '\r')
                     {
                         writer.TryWrite($"read: {lineBuilder.ToString()}");
                         lineBuilder.Clear();

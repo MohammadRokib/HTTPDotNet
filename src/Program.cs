@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using HttpNet;
+using System.Net;
 using System.Net.Sockets;
 
 namespace src
@@ -9,7 +10,8 @@ namespace src
         private static readonly int port = 9000;
         static async Task Main(string[] args)
         {
-            HttpNet net = new HttpNet();
+            //HttpNet net = new HttpNet();
+            Tcp tcp = new Tcp();
             var listener = new TcpListener(IPAddress.Loopback, port);
             
             listener.Start();
@@ -26,12 +28,14 @@ namespace src
                 while (!_cts.Token.IsCancellationRequested)
                 {
                     var client = await listener.AcceptTcpClientAsync(_cts.Token);
+                    Console.WriteLine("Client Connected");
                     _ = Task.Run(async () =>
                     {
                         try
                         {
                             await using var stream = client.GetStream();
-                            await net.Read(stream);
+                            //await net.Read(stream);
+                            await tcp.Read(stream);
                         }
                         catch (Exception ex)
                         {
